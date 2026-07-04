@@ -11,6 +11,16 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
     logger.info("Starting data preprocessing...")
     df = df.copy()
 
+    # Rename columns to standard names if they exist (handles both CSV and API inputs)
+    rename_cols = {}
+    if 'default.payment.next.month' in df.columns:
+        rename_cols['default.payment.next.month'] = 'TARGET'
+    if 'PAY_0' in df.columns:
+        rename_cols['PAY_0'] = 'PAY_1'
+    
+    if rename_cols:
+        df = df.rename(columns=rename_cols)
+
     # Correct EDUCATION
     # 0, 5, 6 -> 4 (Others)
     fill_edu = (df['EDUCATION'] == 0) | (df['EDUCATION'] == 5) | (df['EDUCATION'] == 6)

@@ -7,11 +7,28 @@ import xgboost as xgb
 from src.app.schemas import CreditRequest, PredictionResponse
 from src.data.preprocess import preprocess_data
 from src.features.build_features import build_features
+import mlflow
+from mlflow.tracking import MlflowClient
 import mlflow.xgboost
 
 app = FastAPI(title="Credit Risk Scoring API", description="API for predicting credit card default")
 
-MODEL_URI = os.getenv("MODEL_URI", "artifacts/model")
+def get_latest_model_uri():
+    try:
+        mlflow.set_tracking_uri("sqlite:///mlflow.db")
+        client = MlflowClient()
+        exp = client.get_experiment_by_name("Credit Risk Scoring")
+        if exp is None: return "artifacts/model"
+        runs = client.search_runs(exp.experiment_id, order_by=["start_time DESC"])
+        if not runs: return "artifacts/model"
+        # Use the idiomatic MLflow runs:/ scheme
+        run_id = runs[0].info.run_id
+        return f"runs:/{run_id}/model"
+    except Exception as e:
+        print(f"Error fetching latest model URI from MLflow: {e}")
+        return "artifacts/model"
+
+MODEL_URI = os.getenv("MODEL_URI", get_latest_model_uri())
 FEATURE_COLS_PATH = "artifacts/feature_columns.json"
 LIMITS_PATH = "artifacts/preprocessing_limits.pkl"
 
@@ -24,12 +41,9 @@ THRESHOLD = 0.35
 def load_artifacts():
     global model, feature_cols, limits
     try:
-        # Load model using xgboost directly instead of MLflow to avoid dependency on MLflow tracking server in production
-        # In a real scenario, you'd pull this from a model registry.
-        if os.path.exists(MODEL_URI):
-            model = mlflow.xgboost.load_model(MODEL_URI)
-        else:
-            print(f"Warning: Model not found at {MODEL_URI}. Please run pipeline first.")
+        # Load model using MLflow
+        print(f"Loading model from {MODEL_URI}")
+        model = mlflow.xgboost.load_model(MODEL_URI)
             
         if os.path.exists(FEATURE_COLS_PATH):
             with open(FEATURE_COLS_PATH, "r") as f:
@@ -44,7 +58,13 @@ def load_artifacts():
 @app.post("/predict", response_model=PredictionResponse)
 def predict(request: CreditRequest):
     if model is None or feature_cols is None or limits is None:
-        raise HTTPException(status_code=503, detail="Model artifacts not loaded properly.")
+        details = {
+            "model_loaded": model is not None,
+            "feature_cols_loaded": feature_cols is not None,
+            "limits_loaded": limits is not None,
+            "MODEL_URI": MODEL_URI
+        }
+        raise HTTPException(status_code=503, detail=f"Model artifacts not loaded properly. Debug: {details}")
         
     # Convert request to DataFrame
     df_raw = pd.DataFrame([request.model_dump()])
