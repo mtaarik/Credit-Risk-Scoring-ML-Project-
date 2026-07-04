@@ -1,0 +1,31 @@
+from pydantic import BaseModel, Field
+
+class CreditRequest(BaseModel):
+    LIMIT_BAL: float = Field(..., description="Amount of the given credit")
+    SEX: int = Field(..., description="Gender (1 = male; 2 = female)")
+    EDUCATION: int = Field(..., description="Education (1 = graduate school; 2 = university; 3 = high school; 4 = others)")
+    MARRIAGE: int = Field(..., description="Marital status (1 = married; 2 = single; 3 = others)")
+    AGE: int = Field(..., description="Age")
+    PAY_1: int = Field(..., description="Repayment status in September, 2005")
+    PAY_2: int = Field(..., description="Repayment status in August, 2005")
+    PAY_3: int = Field(..., description="Repayment status in July, 2005")
+    PAY_4: int = Field(..., description="Repayment status in June, 2005")
+    PAY_5: int = Field(..., description="Repayment status in May, 2005")
+    PAY_6: int = Field(..., description="Repayment status in April, 2005")
+    BILL_AMT1: float = Field(..., description="Amount of bill statement in September, 2005")
+    BILL_AMT2: float = Field(..., description="Amount of bill statement in August, 2005")
+    BILL_AMT3: float = Field(..., description="Amount of bill statement in July, 2005")
+    BILL_AMT4: float = Field(..., description="Amount of bill statement in June, 2005")
+    BILL_AMT5: float = Field(..., description="Amount of bill statement in May, 2005")
+    BILL_AMT6: float = Field(..., description="Amount of bill statement in April, 2005")
+    PAY_AMT1: float = Field(..., description="Amount of previous payment in September, 2005")
+    PAY_AMT2: float = Field(..., description="Amount of previous payment in August, 2005")
+    PAY_AMT3: float = Field(..., description="Amount of previous payment in July, 2005")
+    PAY_AMT4: float = Field(..., description="Amount of previous payment in June, 2005")
+    PAY_AMT5: float = Field(..., description="Amount of previous payment in May, 2005")
+    PAY_AMT6: float = Field(..., description="Amount of previous payment in April, 2005")
+
+class PredictionResponse(BaseModel):
+    probability: float = Field(..., description="Probability of default")
+    prediction: int = Field(..., description="1 = Default, 0 = No Default")
+    risk_level: str = Field(..., description="High Risk or Low Risk")
